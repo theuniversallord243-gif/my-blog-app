@@ -1,0 +1,9 @@
+@echo off
+echo 🚀 Starting Blog App with Auto-Reconnect...
+echo 🔄 This version automatically fixes disconnection errors
+echo 📱 QR code will be generated for mobile access...
+echo.
+python run_public_fixed.py
+echo.
+echo 🛑 App stopped. Press any key to exit...
+pause

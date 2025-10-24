@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header">
+    <h1>Daily Blog</h1>
+    <p>Share your thoughts with beautiful markdown</p>
+    
+    <div class="search-bar">
+        <form method="GET" class="search-form">
+            <div class="search-container">
+                <input type="text" name="search" placeholder="Search posts, authors, topics..." 
+                       class="search-input" value="{{ search_query or '' }}">
+                <button type="submit" class="search-btn" aria-label="Search">
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    {% if current_user %}
+        <p style="margin-top: 15px;">📺 Your Channel: {{ user_channel }}</p>
+    {% endif %}
+    
+    {% if search_query %}
+        <p style="margin-top: 10px; color: #666;">
+            <i class="fas fa-search" aria-hidden="true"></i> Search results for: "{{ search_query }}"
+            <a href="{{ url_for('index') }}" style="margin-left: 10px; color: #1a73e8;">Clear</a>
+        </p>
+    {% endif %}
+</div>
+
+{% if blogs %}
+    <div class="blog-grid">
+        {% for blog in blogs %}
+        <div class="blog-card">
+            <div class="card-header">
+                <div class="author-info">
+                    <div class="avatar">{{ (blog.author or 'A')[0].upper() }}</div>
+                    <div class="author-details">
+                        <strong><a href="{{ url_for('user_profile', username=blog.author) }}" class="author-link">{{ blog.author or 'Anonymous' }}</a></strong>
+                        <span class="post-date">{{ blog.date }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="blog-card-body">
+                <div class="blog-text-content">
+                    <h3><a href="{{ url_for('view_blog', blog_id=blog.id) }}">{{ blog.title|safe }}</a></h3>
+                    <div class="blog-content">
+                        {{ blog.content[:200]|safe }}
+                        {% if blog.content|length > 200 %}...{% endif %}
+                    </div>
+                </div>
+                {% if blog.images and blog.images|length > 0 %}
+                <div class="blog-thumbnail">
+                    <img src="/static/uploads/{{ blog.images[0] }}" alt="{{ blog.title }}">
+                </div>
+                {% endif %}
+
+            </div>
+            
+            <div class="engagement-stats">
+                <div class="stat-item">
+                    {% if current_user %}
+                        <button class="like-btn" onclick="toggleLike({{ blog.id }})" data-blog-id="{{ blog.id }}" aria-label="Like post">
+                            <i class="fas fa-heart" aria-hidden="true"></i>
+                            <span class="like-count">{{ blog.likes or 0 }}</span>
+                        </button>
+                    {% else %}
+                        <span class="like-display">
+                            <i class="fas fa-heart" aria-hidden="true"></i>
+                            <span class="like-count">{{ blog.likes or 0 }}</span>
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="stat-item">
+                    <span class="comments">
+                        <i class="fas fa-comment" aria-hidden="true"></i>
+                        <span class="comment-count">{{ blog.comments or 0 }}</span>
+                    </span>
+                </div>
+            </div>
+            
+            <div class="card-actions">
+                {% if blog.content|length > 200 %}
+                <a href="{{ url_for('view_blog', blog_id=blog.id) }}" class="read-more-btn">
+                    <i class="fas fa-book-open" aria-hidden="true"></i> Read More
+                </a>
+                {% endif %}
+                <div class="share-dropdown">
+                    <button class="action-btn share-toggle" data-blog-id="{{ blog.id }}" aria-label="Share post">
+                        <i class="fas fa-share" aria-hidden="true"></i>
+                    </button>
+                    <div class="share-overlay" id="shareOverlay{{ blog.id }}" data-blog-id="{{ blog.id }}"></div>
+                    <div class="share-menu" id="shareMenu{{ blog.id }}">
+                        <div class="share-header">
+                            <h4>Share this post</h4>
+                            <button class="close-share" data-blog-id="{{ blog.id }}" aria-label="Close share menu">
+                                <i class="fas fa-times" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <a href="https://twitter.com/intent/tweet?text={{ blog.title|urlencode }}&url={{ request.url_root }}blog/{{ blog.id }}" 
+                           target="_blank" class="share-btn twitter">
+                            <i class="fab fa-twitter" aria-hidden="true"></i> Twitter
+                        </a>
+                        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.url_root }}blog/{{ blog.id }}" 
+                           target="_blank" class="share-btn facebook">
+                            <i class="fab fa-facebook" aria-hidden="true"></i> Facebook
+                        </a>
+                        <a href="https://wa.me/?text={{ blog.title|urlencode }}%20{{ request.url_root }}blog/{{ blog.id }}" 
+                           target="_blank" class="share-btn whatsapp">
+                            <i class="fab fa-whatsapp" aria-hidden="true"></i> WhatsApp
+                        </a>
+                        <a href="https://www.instagram.com/" 
+                           target="_blank" class="share-btn instagram">
+                            <i class="fab fa-instagram" aria-hidden="true"></i> Instagram
+                        </a>
+                        <button class="share-btn copy" data-url="{{ request.url_root }}blog/{{ blog.id }}">
+                            <i class="fas fa-copy" aria-hidden="true"></i> Copy Link
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="form-container" style="text-align: center;">
+        <h2>No blog posts yet</h2>
+        <p>Start sharing your thoughts by creating your first post!</p>
+        {% if current_user %}
+            <a href="{{ url_for('create_blog') }}" class="btn btn-primary">Create First Post</a>
+        {% else %}
+            <a href="{{ url_for('register') }}" class="btn btn-primary">Get Started</a>
+        {% endif %}
+    </div>
+{% endif %}
+
+<script>
+function toggleLike(blogId) {
+    fetch(`/like/${blogId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const likeBtn = document.querySelector(`[data-blog-id="${blogId}"]`);
+            const likeCount = likeBtn.querySelector('.like-count');
+            const heartIcon = likeBtn.querySelector('i');
+            
+            likeCount.textContent = data.likes_count;
+            
+            if (data.liked) {
+                likeBtn.classList.add('liked');
+                heartIcon.style.color = '#ff6384';
+            } else {
+                likeBtn.classList.remove('liked');
+                heartIcon.style.color = '';
+            }
+        } else {
+            alert(data.message || 'Failed to like/unlike post');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to like/unlike post');
+    });
+}
+</script>
+{% endblock %}

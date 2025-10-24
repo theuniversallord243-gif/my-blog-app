@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="form-container">
+        <h1>✍️ Create New Post</h1>
+        <p>Share your thoughts with the world</p>
+        
+        <form method="POST" enctype="multipart/form-data" id="blogForm">
+            <div class="form-group">
+                <label for="title" class="form-label">
+                    <i class="fas fa-heading"></i> Title
+                </label>
+                <input type="text" id="title" name="title" class="form-control" 
+                       placeholder="Enter an engaging title..." required maxlength="200">
+            </div>
+            
+            <div class="form-group">
+                <label for="content" class="form-label">
+                    <i class="fas fa-edit"></i> Content
+                </label>
+                <textarea id="content" name="content" class="form-control" 
+                          placeholder="Write your story... (Markdown supported)" required rows="15"></textarea>
+                <small class="form-text">You can use Markdown formatting for rich text.</small>
+            </div>
+            
+
+            
+            <div class="form-group">
+                <label for="images" class="form-label">
+                    <i class="fas fa-image"></i> Images (Required)
+                </label>
+                <div class="image-upload-area" onclick="document.getElementById('images').click()">
+                    <div class="upload-placeholder">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Click to upload images or drag & drop</p>
+                        <small>Required: At least 1 image. Supports: JPG, PNG, GIF (Max 5MB each)</small>
+                    </div>
+                    <input type="file" id="images" name="images" multiple accept="image/*" required style="display: none;">
+                </div>
+                <div id="imagePreview" class="image-preview"></div>
+            </div>
+            
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> Publish Post
+                </button>
+                <a href="{{ url_for('index') }}" class="btn">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<script>
+// Frontend validation with AND logic
+document.getElementById('blogForm').addEventListener('submit', function(e) {
+    const title = document.getElementById('title').value.trim();
+    const content = document.getElementById('content').value.trim();
+    const images = document.getElementById('images').files;
+    
+    // Strict validation: title AND content AND image required
+    if (!title || !content || images.length === 0) {
+        e.preventDefault();
+        alert('Sab fields fill karo! Title, Content aur Image teeno required hain.');
+        return false;
+    }
+    
+    // Additional validations
+    if (title.length < 3) {
+        e.preventDefault();
+        alert('Title kam se kam 3 characters ka hona chahiye!');
+        return false;
+    }
+    
+    if (content.length < 10) {
+        e.preventDefault();
+        alert('Content kam se kam 10 characters ka hona chahiye!');
+        return false;
+    }
+    
+    // File type and size validation
+    for (let i = 0; i < images.length; i++) {
+        const file = images[i];
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        
+        if (!allowedTypes.includes(file.type)) {
+            e.preventDefault();
+            alert('Invalid file type! Only JPG, PNG, GIF, WEBP allowed.');
+            return false;
+        }
+        
+        if (file.size > 5 * 1024 * 1024) { // 5MB
+            e.preventDefault();
+            alert('File too large! Maximum 5MB per image.');
+            return false;
+        }
+    }
+});
+
+// Image preview functionality
+document.getElementById('images').addEventListener('change', function(e) {
+    const preview = document.getElementById('imagePreview');
+    preview.innerHTML = '';
+    
+    Array.from(e.target.files).forEach((file, index) => {
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const div = document.createElement('div');
+                div.className = 'preview-item';
+                div.innerHTML = `
+                    <img src="${e.target.result}" alt="Preview ${index + 1}">
+                    <button type="button" class="remove-image" onclick="removeImage(${index})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                preview.appendChild(div);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+});
+
+function removeImage(index) {
+    const fileInput = document.getElementById('images');
+    const dt = new DataTransfer();
+    
+    Array.from(fileInput.files).forEach((file, i) => {
+        if (i !== index) dt.items.add(file);
+    });
+    
+    fileInput.files = dt.files;
+    fileInput.dispatchEvent(new Event('change'));
+}
+</script>
+{% endblock %}

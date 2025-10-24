@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <a href="{{ url_for('index') }}" class="back-link">
+        <i class="fas fa-arrow-left"></i> Back to Home
+    </a>
+    
+    <div class="notifications-container">
+        <div class="notifications-header">
+            <h1><i class="fas fa-bell"></i> Notifications</h1>
+            <p>Stay updated with your latest activities</p>
+        </div>
+        
+        {% if notifications %}
+            <div class="notifications-list">
+                {% for notification in notifications %}
+                <div class="notification-item {% if not notification[5] %}unread{% endif %}">
+                    <div class="notification-avatar">
+                        {{ notification[1][0].upper() }}
+                    </div>
+                    <div class="notification-content">
+                        <div class="notification-message">
+                            {{ notification[3]|safe }}
+                        </div>
+                        <div class="notification-meta">
+                            <span class="notification-time">{{ notification[6] }}</span>
+                            {% if notification[2] == 'comment' and notification[4] %}
+                                <a href="{{ url_for('view_blog', blog_id=notification[4]) }}" class="notification-link">
+                                    View Blog
+                                </a>
+                            {% elif notification[2] == 'like' and notification[4] %}
+                                <a href="{{ url_for('view_blog', blog_id=notification[4]) }}" class="notification-link">
+                                    View Blog
+                                </a>
+                            {% elif notification[2] == 'follow' %}
+                                <a href="{{ url_for('user_profile', username=notification[1]) }}" class="notification-link">
+                                    View Profile
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="notification-type">
+                        {% if notification[2] == 'comment' %}
+                            <i class="fas fa-comment text-blue"></i>
+                        {% elif notification[2] == 'follow' %}
+                            <i class="fas fa-user-plus text-green"></i>
+                        {% elif notification[2] == 'like' %}
+                            <i class="fas fa-heart text-red"></i>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="no-notifications">
+                <i class="fas fa-bell-slash"></i>
+                <h3>No notifications yet</h3>
+                <p>When someone follows you or comments on your blogs, you'll see notifications here.</p>
+                <a href="{{ url_for('index') }}" class="btn btn-primary">Explore Blogs</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

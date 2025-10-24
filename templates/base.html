@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Daily Blog - Share your thoughts and stories">
+    <title>{% block title %}Daily Blog{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="{{ 'dark-mode' if current_theme == 'dark' else 'light-mode' }}" {% if current_user %}data-logged-in="true"{% endif %}>
+    <!-- Skip to main content -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+    
+    <!-- Navigation -->
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="{{ url_for('index') }}" class="brand-link" aria-label="Daily Blog Home">
+                    <i class="fas fa-blog" aria-hidden="true"></i>
+                    <span>Daily Blog</span>
+                </a>
+            </div>
+            
+            <div class="nav-menu" role="menubar">
+                <a href="{{ url_for('index') }}" class="nav-link" role="menuitem">
+                    <i class="fas fa-home" aria-hidden="true"></i> Home
+                </a>
+                
+                {% if current_user %}
+                    <a href="{{ url_for('create_blog') }}" class="nav-link" role="menuitem">
+                        <i class="fas fa-plus" aria-hidden="true"></i> Create
+                    </a>
+                    <a href="{{ url_for('notifications') }}" class="nav-link notification-link" role="menuitem">
+                        <i class="fas fa-bell" aria-hidden="true"></i>
+                        {% if notification_count > 0 %}
+                            <span class="notification-badge">{{ notification_count }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="nav-link" role="menuitem">
+                        <i class="fas fa-sign-out-alt" aria-hidden="true"></i> Logout
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="nav-link" role="menuitem">
+                        <i class="fas fa-sign-in-alt" aria-hidden="true"></i> Login
+                    </a>
+                    <a href="{{ url_for('register') }}" class="nav-link" role="menuitem">
+                        <i class="fas fa-user-plus" aria-hidden="true"></i> Register
+                    </a>
+                {% endif %}
+                
+                <button class="theme-btn" id="themeToggle" onclick="toggleMode()" aria-label="Toggle dark mode" aria-pressed="false">
+                    <i class="fas fa-moon" aria-hidden="true"></i>
+                </button>
+                
+                {% if current_user %}
+                    <a href="{{ url_for('profile') }}" class="profile-circle" aria-label="View Profile">
+                        <i class="fas fa-user" aria-hidden="true"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages" role="alert" aria-live="polite">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }}" role="alert">
+                        <span>{{ message }}</span>
+                        <button type="button" class="close" onclick="this.parentElement.remove()" aria-label="Close message">
+                            <i class="fas fa-times" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Main Content -->
+    <main class="main-content" role="main" id="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="footer" role="contentinfo">
+        <div class="footer-content">
+            <p>&copy; 2024 Daily Blog. Made with <i class="fas fa-heart text-red" aria-label="love"></i></p>
+        </div>
+    </footer>
+    
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <script>
+    // Initialize theme on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const isDark = document.body.classList.contains('dark-mode');
+        const icon = document.querySelector('.theme-btn i');
+        const themeBtn = document.getElementById('themeToggle');
+        
+        if (icon) {
+            icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+        }
+        
+        if (themeBtn) {
+            themeBtn.setAttribute('aria-pressed', isDark);
+            themeBtn.setAttribute('aria-label', `Switch to ${isDark ? 'light' : 'dark'} mode`);
+        }
+        
+        // Add keyboard navigation support
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                // Close any open alerts
+                const alerts = document.querySelectorAll('.alert');
+                alerts.forEach(alert => alert.remove());
+            }
+        });
+    });
+    
+    // Theme toggle function
+    function toggleMode() {
+        const isDark = document.body.classList.contains('dark-mode');
+        const newMode = isDark ? 'light' : 'dark';
+        const themeBtn = document.getElementById('themeToggle');
+        
+        fetch('/theme', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({theme: newMode})
+        }).then(() => {
+            document.body.classList.remove('light-mode', 'dark-mode');
+            document.body.classList.add(newMode + '-mode');
+            const icon = document.querySelector('.theme-btn i');
+            icon.className = isDark ? 'fas fa-moon' : 'fas fa-sun';
+            
+            // Update accessibility attributes
+            themeBtn.setAttribute('aria-pressed', newMode === 'dark');
+            themeBtn.setAttribute('aria-label', `Switch to ${isDark ? 'dark' : 'light'} mode`);
+        }).catch(error => {
+            console.error('Theme toggle failed:', error);
+        });
+    }
+    </script>
+</body>
+</html>

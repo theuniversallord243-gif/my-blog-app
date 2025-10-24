@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="form-container">
+        <h1>✏️ Edit Post</h1>
+        <p>Update your blog post</p>
+        
+        <form method="POST">
+            <div class="form-group">
+                <label for="title" class="form-label">
+                    <i class="fas fa-heading"></i> Title
+                </label>
+                <input type="text" id="title" name="title" class="form-control" 
+                       value="{{ blog.title }}" required maxlength="200">
+            </div>
+            
+            <div class="form-group">
+                <label for="content" class="form-label">
+                    <i class="fas fa-edit"></i> Content
+                </label>
+                <textarea id="content" name="content" class="form-control" 
+                          required rows="15">{{ blog.content }}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Update Post
+                </button>
+                <a href="{{ url_for('view_blog', blog_id=blog.id) }}" class="btn">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
