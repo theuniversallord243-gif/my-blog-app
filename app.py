@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory, make_response
 import json
 import os
 import secrets
@@ -1311,6 +1311,65 @@ def delete_blog(blog_id):
 @app.route('/favicon.ico')
 def favicon():
     return '', 204
+
+@app.route('/sitemap.xml')
+def sitemap():
+    """Generate XML sitemap for SEO"""
+    pages = []
+    base_url = 'https://my-blog-app-utli.onrender.com'
+    
+    # Static pages
+    pages.append({'loc': f'{base_url}/', 'priority': '1.0', 'changefreq': 'daily'})
+    pages.append({'loc': f'{base_url}/login', 'priority': '0.5', 'changefreq': 'monthly'})
+    pages.append({'loc': f'{base_url}/register', 'priority': '0.5', 'changefreq': 'monthly'})
+    
+    # Blog posts
+    try:
+        with sqlite3.connect(DB_FILE) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, created_at FROM blogs ORDER BY created_at DESC')
+            blogs = cursor.fetchall()
+            for blog_id, created_at in blogs:
+                pages.append({
+                    'loc': f'{base_url}/blog/{blog_id}',
+                    'priority': '0.8',
+                    'changefreq': 'weekly',
+                    'lastmod': created_at.split()[0] if created_at else datetime.now().strftime('%Y-%m-%d')
+                })
+    except Exception as e:
+        print(f"Sitemap error: {e}")
+    
+    sitemap_xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    sitemap_xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for page in pages:
+        sitemap_xml += '  <url>\n'
+        sitemap_xml += f'    <loc>{page["loc"]}</loc>\n'
+        if 'lastmod' in page:
+            sitemap_xml += f'    <lastmod>{page["lastmod"]}</lastmod>\n'
+        sitemap_xml += f'    <changefreq>{page["changefreq"]}</changefreq>\n'
+        sitemap_xml += f'    <priority>{page["priority"]}</priority>\n'
+        sitemap_xml += '  </url>\n'
+    sitemap_xml += '</urlset>'
+    
+    response = make_response(sitemap_xml)
+    response.headers['Content-Type'] = 'application/xml'
+    return response
+
+@app.route('/robots.txt')
+def robots():
+    """Robots.txt for search engines"""
+    robots_txt = '''User-agent: *
+Allow: /
+Sitemap: https://my-blog-app-utli.onrender.com/sitemap.xml
+'''
+    response = make_response(robots_txt)
+    response.headers['Content-Type'] = 'text/plain'
+    return response
+
+@app.route('/googleeef8bc3a48e26c4fb.html')
+def google_verification():
+    """Google Search Console verification"""
+    return send_from_directory('static', 'googleeef8bc3a48e26c4fb.html')
 
 @app.route('/static/uploads/<filename>')
 def uploaded_file(filename):
